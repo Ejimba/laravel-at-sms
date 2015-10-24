@@ -5,6 +5,7 @@ namespace Ejimba\LaravelAtSms;
 use AfricasTalkingGateway\AfricasTalkingGateway;
 use Ejimba\LaravelAtSms\Models\IncomingSms;
 use Ejimba\LaravelAtSms\Models\OutgoingSms;
+use Config;
 
 class LaravelAtSms {
     
@@ -15,6 +16,14 @@ class LaravelAtSms {
     {
         $this->username = Config::get('laravel-at-sms::username');
         $this->apiKey = Config::get('laravel-at-sms::api_key');
+
+        if($this->username == ''){
+            throw new LaravelAtSmsException("Missing API Username", 1);
+        }
+
+        if($this->apiKey == ''){
+            throw new LaravelAtSmsException("Missing API Key", 1);
+        }
     }
 
     public function sendMessage($to, $message, $from = null, $options = array())
