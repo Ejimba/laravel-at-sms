@@ -1,0 +1,23 @@
+{
+    "name": "ejimba/laravel-at-sms",
+    "description": "Integrate SMS messaging in your Laravel Application using Africas Talking Gateway.",
+    "keywords": ["africa talking api", "sms", "message", "laravel", "africa", "talking", "api", "php", "kenya"],
+    "authors": [
+        {
+            "name": "Ejimba Eric",
+            "email": "ejimba@gmail.com"
+        }
+    ],
+    "license": "MIT",
+    "require": {
+        "php": ">=5.4.0",
+        "illuminate/support": "4.2.x",
+        "ejimba/africas-talking-gateway": "1.x"
+    },
+    "autoload": {
+        "psr-0": {
+            "Ejimba\\LaravelAtSms": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
