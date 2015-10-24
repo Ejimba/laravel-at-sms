@@ -5,6 +5,8 @@ namespace Ejimba\LaravelAtSms;
 use AfricasTalkingGateway\AfricasTalkingGateway;
 use Ejimba\LaravelAtSms\Models\IncomingSms;
 use Ejimba\LaravelAtSms\Models\OutgoingSms;
+use Ejimba\LaravelAtSms\LaravelAtSmsException;
+use Carbon\Carbon;
 use Config;
 
 class LaravelAtSms {
@@ -46,6 +48,10 @@ class LaravelAtSms {
 
             $recipients = trim($recipients, ",");
         }
+        else
+        {
+            $recipients = $to;
+        }
 
         $dest = explode(',', $recipients);
         
@@ -62,6 +68,30 @@ class LaravelAtSms {
         try
         {
             $results = $gateway->sendMessage($recipients, $message);
+            
+            foreach ($results as $key => $result) {
+                
+                $outgoing_sms = OutgoingSms::where('destination', '=', $result->number)->where('processed', '=', 1)->where('sent', '=', 0)->first();
+                
+                if(!is_null($outgoing_sms))
+                {
+                    if($result->status == 'Success')
+                    {
+                        $outgoing_sms->sent = 1;
+                        $outgoing_sms->sent_time = Carbon::now();
+                        $outgoing_sms->gateway_message_id = $result->messageId;
+                        $outgoing_sms->cost = $result->cost;
+                        $outgoing_sms->save();
+                    }
+                    else
+                    {
+                        $outgoing_sms->retries = $outgoing_sms->retries + 1;
+                        $outgoing_sms->last_retry_time = Carbon::now();
+                        $outgoing_sms->save();
+                    }
+                }
+            }
+
             return $results;
         }
         catch (Exception $e)
@@ -70,15 +100,16 @@ class LaravelAtSms {
         }
     }
 
-    public function getOutgoingSms()
-    {
-        $outgoing_sms = OutgoingSms::all();
-        return $outgoing_sms;
-    }
-
     public function getIcomingSms()
     {
         $incoming_sms = IncomingSms::all();
         return $incoming_sms;
     }
+
+    public function getOutgoingSms()
+    {
+        $outgoing_sms = OutgoingSms::all();
+        return $outgoing_sms;
+    }
+    
 }

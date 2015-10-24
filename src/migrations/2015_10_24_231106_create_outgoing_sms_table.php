@@ -35,6 +35,7 @@ class CreateOutgoingSmsTable extends Migration {
             $table->boolean('sent')->default(false);
             $table->dateTime('sent_time')->nullable();
             $table->string('gateway_message_id')->nullable();
+            $table->string('cost')->nullable();
             $table->string('delivery_status')->nullable();
             $table->string('delivery_failure_reason')->nullable();
             $table->integer('retries')->unsigned()->default(0);
