@@ -72,10 +72,14 @@ return array(
         |
         | The method that is called when a new sms arrives. 
         |
-        | Supported: Function
+        | Supported: ClassName@method
+        |
+        | e.g. 'UserController@update_profile'
+        |
+        | The method will receive an incoming sms object
         |
         */
-
+        
         'callback' => '',
 
     ),
@@ -111,8 +115,11 @@ return array(
         |
         | The method that is called when an sms is sent. 
         |
-        | Supported: Function
+        | Supported: ClassName@method
         |
+        | e.g. 'UserController@update_reset_token'
+        |
+        | The method will receive an outgoing sms object
         */
 
         'callback' => '',

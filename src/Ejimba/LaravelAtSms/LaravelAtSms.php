@@ -108,7 +108,17 @@ class LaravelAtSms {
 
                         if(!$this->outgoing_sms_callback == '')
                         {
-                            $this->outgoing_sms_callback($outgoing_sms);
+                            $outgoing_sms_callback = $this->outgoing_sms_callback;
+                            $ctl = explode('@', $outgoing_sms_callback);
+                            if(count($ctl) == 2)
+                            {
+                                // Config has the right format
+                                $controller = $ctl[0];
+                                $method = $ctl[1];
+
+                                $obj = new $controller;
+                                $obj->$method($outgoing_sms);
+                            }
                         }
                     }
                     else
@@ -126,18 +136,6 @@ class LaravelAtSms {
         {
             throw new LaravelAtSmsException("Encountered an error while sending: ".$e->getMessage(), 1);
         }
-    }
-
-    public function getIncomingSms()
-    {
-        $incoming_sms = $this->incoming_sms->all();
-        return $incoming_sms;
-    }
-
-    public function getOutgoingSms()
-    {
-        $outgoing_sms = $this->outgoing_sms->all();
-        return $outgoing_sms;
     }
     
 }
