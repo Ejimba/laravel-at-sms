@@ -3,8 +3,6 @@
 namespace Ejimba\LaravelAtSms;
 
 use AfricasTalkingGateway\AfricasTalkingGateway;
-use Ejimba\LaravelAtSms\Models\IncomingSms;
-use Ejimba\LaravelAtSms\Models\OutgoingSms;
 use Ejimba\LaravelAtSms\LaravelAtSmsException;
 use Carbon\Carbon;
 use Config;
@@ -13,11 +11,23 @@ class LaravelAtSms {
     
     protected $username;
     protected $apiKey;
+    protected $incoming_sms;
+    protected $outgoing_sms;
+    protected $incoming_sms_model;
+    protected $incoming_sms_callback;
+    protected $outgoing_sms_model;
+    protected $outgoing_sms_callback;
 
     public function __construct()
     {
         $this->username = Config::get('laravel-at-sms::username');
         $this->apiKey = Config::get('laravel-at-sms::api_key');
+        $this->incoming_sms_model = Config::get('laravel-at-sms::incoming_sms.model', 'Ejimba\LaravelAtSms\Models\IncomingSms');
+        $this->outgoing_sms_model = Config::get('laravel-at-sms::outgoing_sms.model', 'Ejimba\LaravelAtSms\Models\OutgoingSms');
+        $this->incoming_sms_callback = Config::get('laravel-at-sms::incoming_sms.callback');
+        $this->outgoing_sms_callback = Config::get('laravel-at-sms::outgoing_sms.callback');
+        $this->incoming_sms = new $this->incoming_sms_model;
+        $this->outgoing_sms = new $this->outgoing_sms_model;
 
         if($this->username == ''){
             throw new LaravelAtSmsException("Missing API Username", 1);
@@ -26,6 +36,7 @@ class LaravelAtSms {
         if($this->apiKey == ''){
             throw new LaravelAtSmsException("Missing API Key", 1);
         }
+
     }
 
     public function sendMessage($to, $message, $from = null, $options = array())
@@ -55,8 +66,18 @@ class LaravelAtSms {
 
         $dest = explode(',', $recipients);
         
-        foreach ($dest as $key => $des) {
-            $outgoing_sms = new OutgoingSms;
+        // we check if phone number formats are ok
+        foreach ($dest as $key => $des)
+        {
+            if (strpos($des, '+') === FALSE)
+            {
+                throw new LaravelAtSmsException("Bad Phone Number Format for Message Recipient: ".$des.". Should start with +country_prefix e.g. +254712345678", 1);                
+            }
+        }
+
+        foreach ($dest as $key => $des)
+        {
+            $outgoing_sms = $this->outgoing_sms;
             $outgoing_sms->destination = $des;
             $outgoing_sms->text = $message;
             $outgoing_sms->processed = 1;
@@ -71,7 +92,9 @@ class LaravelAtSms {
             
             foreach ($results as $key => $result) {
                 
-                $outgoing_sms = OutgoingSms::where('destination', '=', $result->number)->where('processed', '=', 1)->where('sent', '=', 0)->first();
+                $outgoing_sms = $this->outgoing_sms->where('destination', '=', $result->number)
+                                                    ->where('processed', '=', 1)->where('sent', '=', 0)
+                                                    ->first();
                 
                 if(!is_null($outgoing_sms))
                 {
@@ -82,6 +105,11 @@ class LaravelAtSms {
                         $outgoing_sms->gateway_message_id = $result->messageId;
                         $outgoing_sms->cost = $result->cost;
                         $outgoing_sms->save();
+
+                        if(!$this->outgoing_sms_callback == '')
+                        {
+                            $this->outgoing_sms_callback($outgoing_sms);
+                        }
                     }
                     else
                     {
@@ -100,15 +128,15 @@ class LaravelAtSms {
         }
     }
 
-    public function getIcomingSms()
+    public function getIncomingSms()
     {
-        $incoming_sms = IncomingSms::all();
+        $incoming_sms = $this->incoming_sms->all();
         return $incoming_sms;
     }
 
     public function getOutgoingSms()
     {
-        $outgoing_sms = OutgoingSms::all();
+        $outgoing_sms = $this->outgoing_sms->all();
         return $outgoing_sms;
     }
     
